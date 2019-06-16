@@ -8,15 +8,19 @@
 
 #import "MainViewController.h"
 
+int const cellAmount = 60;
 NSString * const requestURL = @"https://picsum.photos/v2/list?limit=60";
 NSString * const cellReuseId = @"image-cell";
+NSString * const defaultText = @"Image is being uploading";
 
 @interface MainViewController () <UITableViewDelegate, UITableViewDataSource>
 
 //@property(strong, nonatomic) NSMutableArray <NSDictionary *> *imagesToFetch;
-@property(strong, nonatomic) NSMutableArray <NSDictionary *> *tableDataModel;
+@property(strong, nonatomic) NSMutableArray <NSMutableDictionary *> *tableDataModel;
 
 @property(strong, nonatomic) UITableView *tableView;
+
+@property(strong, nonatomic) UIImage *placeholderImage;
 
 @end
 
@@ -54,27 +58,60 @@ NSString * const cellReuseId = @"image-cell";
                                               [self.tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
                                               ]];
     
+    self.placeholderImage = [UIImage imageNamed:@"image_placeholder"];
+    
+    for (int index = 0; index < cellAmount; index++) {
+        NSMutableDictionary *imageInfo = [@{
+                                      @"defaultImage": self.placeholderImage,
+                                      @"defaultText": defaultText
+                                      } mutableCopy];
+        
+        [self.tableDataModel addObject:imageInfo];
+    }
+    
     [self fetchDataForTableView];
 }
 
 #pragma mark - UI Generators
 
 - (void)fetchDataForTableView {
-    for (int index = 0; index <= 60; index++) {
-        [self fetchRandomImageData:^(NSData *imageData, NSString *url) {
-            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableDataModel.count inSection:0];
+    NSOperationQueue *customQueue = [[NSOperationQueue alloc] init];
+    NSOperationQueue *mainQueue = [NSOperationQueue mainQueue];
+    
+    NSOperation *lastTask = nil;
+    
+    for (int index = 0; index < cellAmount; index++) {
+        NSOperation *operation = [NSBlockOperation blockOperationWithBlock:^{
+            NSDictionary *imageData = [self fetchRandomImageData];
             
-            UIImage *image = [UIImage imageWithData:imageData];
-            UIImage *croppedImage = [self cropImage:image fromCenterWithSize:CGSizeMake(100.f, 100.f)];
+            NSOperation *finalOperation = [NSBlockOperation blockOperationWithBlock:^{
+                NSMutableDictionary *imageInfo = self.tableDataModel[index];
+                
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+                
+                UIImage *image = [UIImage imageWithData:[imageData objectForKey:@"data"]];
+                UIImage *croppedImage = [self cropImage:image fromCenterWithSize:CGSizeMake(100.f, 100.f)];
+                
+                [imageInfo setDictionary:@{
+                                           @"url": [imageData objectForKey:@"url"],
+                                           @"image": image,
+                                           @"imageData": [imageData objectForKey:@"data"],
+                                           @"croppedImage": croppedImage
+                                           }];
+                
+                [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationLeft];
+            }];
             
-            [self.tableDataModel addObject:@{
-                                             @"url": url,
-                                             @"image": image,
-                                             @"imageData": imageData,
-                                             @"croppedImage": croppedImage
-                                             }];
-            [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationTop];
+            [mainQueue addOperation:finalOperation];
         }];
+        
+        if (lastTask) {
+            [operation addDependency:lastTask];
+        }
+        
+        lastTask = operation;
+        
+        [customQueue addOperation:operation];
     }
 }
 
@@ -88,12 +125,20 @@ NSString * const cellReuseId = @"image-cell";
     UITableViewCell *cell = [self.tableView dequeueReusableCellWithIdentifier:cellReuseId];
     NSDictionary *imageInfo = self.tableDataModel[indexPath.row];
     
-    cell.textLabel.text = [imageInfo objectForKey:@"url"];
+    NSString *downloadUrl = [imageInfo objectForKey:@"url"];
+    
+    if (downloadUrl) {
+        cell.textLabel.text = downloadUrl;
+        cell.imageView.image = [imageInfo objectForKey:@"croppedImage"];
+    } else {
+        cell.textLabel.text = [imageInfo objectForKey:@"defaultText"];
+        cell.imageView.image = [imageInfo objectForKey:@"defaultImage"];
+    }
+    
     cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
     cell.textLabel.numberOfLines = 0;
     [cell.textLabel sizeToFit];
     
-    cell.imageView.image = [imageInfo objectForKey:@"croppedImage"];
     
     return cell;
 }
@@ -116,26 +161,23 @@ NSString * const cellReuseId = @"image-cell";
     return error ? nil : dataDictionary;
 }
 
-- (void)fetchRandomImageData:(void(^)(NSData *, NSString *))completion {
-    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+- (NSDictionary *)fetchRandomImageData {
+    CGSize imageSize = [self generateRandomSize];
+    NSString *url = [NSString stringWithFormat:@"https://picsum.photos/%i/%i", (int)imageSize.width, (int)imageSize.height];
+    NSURL *requestURL = [NSURL URLWithString:url];
     
-    dispatch_async(queue, ^{
-        CGSize imageSize = [self generateRandomSize];
-        NSString *url = [NSString stringWithFormat:@"https://picsum.photos/%i/%i", (int)imageSize.width, (int)imageSize.height];
-        NSURL *requestURL = [NSURL URLWithString:url];
-        
-        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:15.0];
-        [request setHTTPMethod:@"HEAD"];
-        NSURLResponse *response = nil;
-        [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:nil];
-        NSURL *finalURL = response.URL;
-        
-        NSData *imageData = [NSData dataWithContentsOfURL:finalURL];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion(imageData, [finalURL absoluteString]);
-        });
-    });
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:15.0];
+    [request setHTTPMethod:@"HEAD"];
+    NSURLResponse *response = nil;
+    [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:nil];
+    NSURL *finalURL = response.URL;
+    
+    NSData *imageData = [NSData dataWithContentsOfURL:finalURL];
+
+    return @{
+             @"data": imageData,
+             @"url": [finalURL absoluteString]
+             };
 }
 
 #pragma mark - Utils
