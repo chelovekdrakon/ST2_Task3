@@ -34,6 +34,12 @@
     UIImageView *imageView = [[UIImageView alloc] initWithImage:self.image];
     self.scrollView.contentSize = imageView.frame.size;
     [self.scrollView addSubview:imageView];
+    
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Back" style:UIBarButtonItemStylePlain target:self action:@selector(handleBackPress:)];
+}
+
+- (void)handleBackPress:(id)selector {
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 @end
