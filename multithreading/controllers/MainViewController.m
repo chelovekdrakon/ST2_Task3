@@ -13,9 +13,8 @@ NSString * const cellReuseId = @"image-cell";
 
 @interface MainViewController () <UITableViewDelegate, UITableViewDataSource>
 
-@property(strong, nonatomic) NSArray <NSDictionary *> *imagesToFetch;
-@property(strong, nonatomic) NSMutableArray <UIImage *> *images;
-@property(strong, nonatomic) NSMutableArray *tableDataModel;
+//@property(strong, nonatomic) NSMutableArray <NSDictionary *> *imagesToFetch;
+@property(strong, nonatomic) NSMutableArray <NSDictionary *> *tableDataModel;
 
 @property(strong, nonatomic) UITableView *tableView;
 
@@ -28,6 +27,9 @@ NSString * const cellReuseId = @"image-cell";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+//    self.imagesToFetch = [NSMutableArray array];
+    self.tableDataModel = [NSMutableArray array];
     
     self.navigationItem.title = @"Multithread !_!,";
     
@@ -51,9 +53,25 @@ NSString * const cellReuseId = @"image-cell";
                                               [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
                                               [self.tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
                                               ]];
+    
+    [self fetchDataForTableView];
 }
 
 #pragma mark - UI Generators
+
+- (void)fetchDataForTableView {
+    for (int index = 0; index <= 60; index++) {
+        [self fetchRandomImageData:^(NSData *imageData, NSString *url) {
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableDataModel.count inSection:0];
+            
+            [self.tableDataModel addObject:@{
+                                             @"imageData": imageData,
+                                             @"url": url
+                                             }];
+            [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationTop];
+        }];
+    }
+}
 
 #pragma mark - UITableViewDataSource
 
@@ -63,10 +81,63 @@ NSString * const cellReuseId = @"image-cell";
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [self.tableView dequeueReusableCellWithIdentifier:cellReuseId];
+    NSDictionary *imageInfo = self.tableDataModel[indexPath.row];
+    
+    cell.textLabel.text = [imageInfo objectForKey:@"url"];
+    cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    cell.textLabel.numberOfLines = 0;
+    [cell.textLabel sizeToFit];
+    
+    UIImage *image = [UIImage imageWithData:[imageInfo objectForKey:@"imageData"]];
+    CGRect cropRect       = CGRectMake(0, 0, 100, 100);
+    CGImageRef imageRef   = CGImageCreateWithImageInRect([image CGImage], cropRect);
+    UIImage *croppedImage = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    
+    cell.imageView.image = croppedImage;
+    
     return cell;
 }
 
 #pragma mark - UITableViewDelegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
+}
+
+#pragma mark - Network Requests
+
+- (NSArray *)getRandomImagesToFetch {
+    NSURL *url = [NSURL URLWithString:requestURL];
+    NSData *jsonData = [NSData dataWithContentsOfURL:url];
+    
+    NSError *error = nil;
+    NSArray *dataDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
+    
+    return error ? nil : dataDictionary;
+}
+
+- (void)fetchRandomImageData:(void(^)(NSData *, NSString *))completion {
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
+    
+    dispatch_async(queue, ^{
+        CGSize imageSize = [self generateRandomSize];
+        NSString *url = [NSString stringWithFormat:@"https://picsum.photos/%i/%i", (int)imageSize.width, (int)imageSize.height];
+        NSURL *requestURL = [NSURL URLWithString:url];
+        
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:15.0];
+        [request setHTTPMethod:@"HEAD"];
+        NSURLResponse *response = nil;
+        [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:nil];
+        NSURL *finalURL = response.URL;
+        
+        NSData *imageData = [NSData dataWithContentsOfURL:finalURL];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion(imageData, [finalURL absoluteString]);
+        });
+    });
+}
 
 #pragma mark - Utils
 
@@ -80,32 +151,6 @@ NSString * const cellReuseId = @"image-cell";
     CGSize size = CGSizeMake(rndWidth, rndHegiht);
     
     return size;
-}
-
-- (NSArray *)getRandomImagesToFetch {
-    NSURL *url = [NSURL URLWithString:requestURL];
-    NSData *jsonData = [NSData dataWithContentsOfURL:url];
-    
-    NSError *error = nil;
-    NSArray *dataDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    
-    return error ? nil : dataDictionary;
-}
-
-- (NSData *)fetchRandomImageData {
-    CGSize imageSize = [self generateRandomSize];
-    NSString *url = [NSString stringWithFormat:@"https://picsum.photos/%i/%i", (int)imageSize.width, (int)imageSize.height];
-    NSURL *requestURL = [NSURL URLWithString:url];
-    
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:15.0];
-    [request setHTTPMethod:@"HEAD"];
-    NSURLResponse *response = nil;
-    [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:nil];
-    NSURL *finalURL = response.URL;
-    
-    NSData *imageData = [NSData dataWithContentsOfURL:finalURL];
-    
-    return imageData;
 }
 
 @end
