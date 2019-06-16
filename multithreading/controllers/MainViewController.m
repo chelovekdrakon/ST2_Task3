@@ -89,11 +89,8 @@ NSString * const cellReuseId = @"image-cell";
     [cell.textLabel sizeToFit];
     
     UIImage *image = [UIImage imageWithData:[imageInfo objectForKey:@"imageData"]];
-    CGRect cropRect       = CGRectMake(0, 0, 100, 100);
-    CGImageRef imageRef   = CGImageCreateWithImageInRect([image CGImage], cropRect);
-    UIImage *croppedImage = [UIImage imageWithCGImage:imageRef];
-    CGImageRelease(imageRef);
-    
+    UIImage *croppedImage = [self cropImage:image fromCenterWithSize:CGSizeMake(100.f, 100.f)];
+
     cell.imageView.image = croppedImage;
     
     return cell;
@@ -151,6 +148,20 @@ NSString * const cellReuseId = @"image-cell";
     CGSize size = CGSizeMake(rndWidth, rndHegiht);
     
     return size;
+}
+
+- (UIImage *)cropImage:(UIImage *)image fromCenterWithSize:(CGSize)size{
+    float imageWidth    = image.size.width;
+    float imageHeight   = image.size.height;
+    float scaleToWidth  = size.width;
+    float scaleToHeight = size.height;
+    
+    CGRect cropRect       = CGRectMake((imageWidth/2 - scaleToWidth/2), (imageHeight/2 - scaleToHeight/2), scaleToWidth, scaleToHeight);
+    CGImageRef imageRef   = CGImageCreateWithImageInRect([image CGImage], cropRect);
+    UIImage *croppedImage = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    
+    return croppedImage;
 }
 
 @end
