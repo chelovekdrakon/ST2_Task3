@@ -1,23 +1,23 @@
 //
-//  ViewController.m
+//  MainViewController.m
 //  multithreading
 //
 //  Created by Фёдор Морев on 6/15/19.
 //  Copyright © 2019 Fiodar. All rights reserved.
 //
 
-#import "ViewController.h"
+#import "MainViewController.h"
 
-@interface ViewController ()
+@interface MainViewController ()
 
 @end
 
-@implementation ViewController
+@implementation MainViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
+    
+    self.navigationItem.title = @"Multithread !_!,";
 }
-
 
 @end

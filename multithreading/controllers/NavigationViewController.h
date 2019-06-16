@@ -1,5 +1,5 @@
 //
-//  ViewController.h
+//  NavigationViewController.h
 //  multithreading
 //
 //  Created by Фёдор Морев on 6/15/19.
@@ -8,8 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ViewController : UIViewController
-
+@interface NavigationViewController : UINavigationController
 
 @end
-
