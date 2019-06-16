@@ -7,6 +7,7 @@
 //
 
 #import "MainViewController.h"
+#import "DetailViewController.h"
 
 int const cellAmount = 60;
 NSString * const requestURL = @"https://picsum.photos/v2/list?limit=60";
@@ -17,10 +18,9 @@ NSString * const defaultText = @"Image is being uploading";
 
 //@property(strong, nonatomic) NSMutableArray <NSDictionary *> *imagesToFetch;
 @property(strong, nonatomic) NSMutableArray <NSMutableDictionary *> *tableDataModel;
-
 @property(strong, nonatomic) UITableView *tableView;
-
 @property(strong, nonatomic) UIImage *placeholderImage;
+@property(strong, nonatomic) NSOperationQueue *customQueue;
 
 @end
 
@@ -69,13 +69,20 @@ NSString * const defaultText = @"Image is being uploading";
         [self.tableDataModel addObject:imageInfo];
     }
     
+    self.customQueue = [[NSOperationQueue alloc] init];
+    
     [self fetchDataForTableView];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    if (self.customQueue.isSuspended) {
+        [self.customQueue setSuspended:NO];
+    }
 }
 
 #pragma mark - UI Generators
 
 - (void)fetchDataForTableView {
-    NSOperationQueue *customQueue = [[NSOperationQueue alloc] init];
     NSOperationQueue *mainQueue = [NSOperationQueue mainQueue];
     
     NSOperation *lastTask = nil;
@@ -111,7 +118,7 @@ NSString * const defaultText = @"Image is being uploading";
         
         lastTask = operation;
         
-        [customQueue addOperation:operation];
+        [self.customQueue addOperation:operation];
     }
 }
 
@@ -122,7 +129,7 @@ NSString * const defaultText = @"Image is being uploading";
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [self.tableView dequeueReusableCellWithIdentifier:cellReuseId];
+    UITableViewCell *cell = [self.tableView dequeueReusableCellWithIdentifier:cellReuseId forIndexPath:indexPath];
     NSDictionary *imageInfo = self.tableDataModel[indexPath.row];
     
     NSString *downloadUrl = [imageInfo objectForKey:@"url"];
@@ -147,6 +154,20 @@ NSString * const defaultText = @"Image is being uploading";
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
+    [self.customQueue setSuspended:YES];
+    
+    NSDictionary *imageInfo = self.tableDataModel[indexPath.row];
+    UIImage *image = [imageInfo objectForKey:@"image"];
+    
+    if (!image) {
+        image = [imageInfo objectForKey:@"defaultImage"];
+    }
+    
+    DetailViewController *vc = [DetailViewController new];
+    vc.image = image;
+    
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 #pragma mark - Network Requests

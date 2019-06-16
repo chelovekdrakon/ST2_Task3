@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3219325222B683FC00D51461 /* DetailViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3219325122B683FC00D51461 /* DetailViewController.m */; };
 		323F77E822B576020030C60B /* MainViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 323F77E722B576020030C60B /* MainViewController.m */; };
 		323F77EC22B576610030C60B /* NavigationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 323F77EB22B576610030C60B /* NavigationViewController.m */; };
 		3248902722B5110D0044B9E7 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3248902622B5110D0044B9E7 /* AppDelegate.m */; };
@@ -16,6 +17,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3219325022B683FC00D51461 /* DetailViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DetailViewController.h; sourceTree = "<group>"; };
+		3219325122B683FC00D51461 /* DetailViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DetailViewController.m; sourceTree = "<group>"; };
 		323F77E622B576020030C60B /* MainViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MainViewController.h; sourceTree = "<group>"; };
 		323F77E722B576020030C60B /* MainViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MainViewController.m; sourceTree = "<group>"; };
 		323F77EA22B576610030C60B /* NavigationViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NavigationViewController.h; sourceTree = "<group>"; };
@@ -47,6 +50,8 @@
 				323F77EB22B576610030C60B /* NavigationViewController.m */,
 				323F77E622B576020030C60B /* MainViewController.h */,
 				323F77E722B576020030C60B /* MainViewController.m */,
+				3219325022B683FC00D51461 /* DetailViewController.h */,
+				3219325122B683FC00D51461 /* DetailViewController.m */,
 			);
 			path = controllers;
 			sourceTree = "<group>";
@@ -150,6 +155,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3219325222B683FC00D51461 /* DetailViewController.m in Sources */,
 				3248903522B5110E0044B9E7 /* main.m in Sources */,
 				323F77EC22B576610030C60B /* NavigationViewController.m in Sources */,
 				3248902722B5110D0044B9E7 /* AppDelegate.m in Sources */,
