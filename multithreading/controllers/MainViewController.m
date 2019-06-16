@@ -64,9 +64,14 @@ NSString * const cellReuseId = @"image-cell";
         [self fetchRandomImageData:^(NSData *imageData, NSString *url) {
             NSIndexPath *indexPath = [NSIndexPath indexPathForRow:self.tableDataModel.count inSection:0];
             
+            UIImage *image = [UIImage imageWithData:imageData];
+            UIImage *croppedImage = [self cropImage:image fromCenterWithSize:CGSizeMake(100.f, 100.f)];
+            
             [self.tableDataModel addObject:@{
+                                             @"url": url,
+                                             @"image": image,
                                              @"imageData": imageData,
-                                             @"url": url
+                                             @"croppedImage": croppedImage
                                              }];
             [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationTop];
         }];
@@ -88,10 +93,7 @@ NSString * const cellReuseId = @"image-cell";
     cell.textLabel.numberOfLines = 0;
     [cell.textLabel sizeToFit];
     
-    UIImage *image = [UIImage imageWithData:[imageInfo objectForKey:@"imageData"]];
-    UIImage *croppedImage = [self cropImage:image fromCenterWithSize:CGSizeMake(100.f, 100.f)];
-
-    cell.imageView.image = croppedImage;
+    cell.imageView.image = [imageInfo objectForKey:@"croppedImage"];
     
     return cell;
 }
@@ -156,7 +158,10 @@ NSString * const cellReuseId = @"image-cell";
     float scaleToWidth  = size.width;
     float scaleToHeight = size.height;
     
-    CGRect cropRect       = CGRectMake((imageWidth/2 - scaleToWidth/2), (imageHeight/2 - scaleToHeight/2), scaleToWidth, scaleToHeight);
+    CGRect cropRect       = CGRectMake((imageWidth / 2 - scaleToWidth / 2),
+                                       (imageHeight / 2 - scaleToHeight / 2),
+                                       scaleToWidth,
+                                       scaleToHeight);
     CGImageRef imageRef   = CGImageCreateWithImageInRect([image CGImage], cropRect);
     UIImage *croppedImage = [UIImage imageWithCGImage:imageRef];
     CGImageRelease(imageRef);
